@@ -3,6 +3,7 @@
 import { useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { getUser, getDeployedAgents, getLogs } from '@/lib/storage';
+import { DollarSign, Users, Repeat, Activity, Bot, Clock, TrendingUp, FileText } from 'lucide-react';
 
 
 export default function DashboardPage() {
@@ -34,26 +35,38 @@ export default function DashboardPage() {
         </div>
 
         {/* Stats Grid */}
-        <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
-          <div className="glass border-glow rounded-lg p-6 glow">
-            <div className="text-sm text-muted-foreground mb-2">Account Balance</div>
-            <div className="text-2xl font-bold text-primary">${user.balance.toFixed(2)}</div>
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+          <div className="glass border-glow rounded-lg p-6 glow flex items-center space-x-4">
+            <DollarSign className="h-8 w-8 text-primary" />
+            <div>
+              <div className="text-sm text-muted-foreground">Account Balance</div>
+              <div className="text-2xl font-bold text-primary">${user.balance.toFixed(2)}</div>
+            </div>
           </div>
-          <div className="glass border-glow rounded-lg p-6 glow">
-            <div className="text-sm text-muted-foreground mb-2">Active Agents</div>
-            <div className="text-2xl font-bold text-accent">{deployedAgents.filter(a => a.status === 'active').length}</div>
+          <div className="glass border-glow rounded-lg p-6 glow flex items-center space-x-4">
+            <Users className="h-8 w-8 text-accent" />
+            <div>
+              <div className="text-sm text-muted-foreground">Active Agents</div>
+              <div className="text-2xl font-bold text-accent">{deployedAgents.filter(a => a.status === 'active').length}</div>
+            </div>
           </div>
-          <div className="glass border-glow rounded-lg p-6 glow">
-            <div className="text-sm text-muted-foreground mb-2">Total Transactions</div>
-            <div className="text-2xl font-bold text-primary">{recentLogs.length}</div>
+          <div className="glass border-glow rounded-lg p-6 glow flex items-center space-x-4">
+            <Repeat className="h-8 w-8 text-primary" />
+            <div>
+              <div className="text-sm text-muted-foreground">Total Transactions</div>
+              <div className="text-2xl font-bold text-primary">{recentLogs.length}</div>
+            </div>
           </div>
-          <div className="glass border-glow rounded-lg p-6 glow">
-            <div className="text-sm text-muted-foreground mb-2">Session Status</div>
-            <div className="text-sm font-medium">
-              <span className="inline-flex items-center gap-2">
-                <span className="w-2 h-2 bg-green-500 rounded-full animate-pulse"></span>
-                Active
-              </span>
+          <div className="glass border-glow rounded-lg p-6 glow flex items-center space-x-4">
+            <Activity className="h-8 w-8 text-green-500" />
+            <div>
+              <div className="text-sm text-muted-foreground">Session Status</div>
+              <div className="text-sm font-medium">
+                <span className="inline-flex items-center gap-2">
+                  <span className="w-2 h-2 bg-green-500 rounded-full animate-pulse"></span>
+                  Active
+                </span>
+              </div>
             </div>
           </div>
         </div>
@@ -73,10 +86,11 @@ export default function DashboardPage() {
               {deployedAgents.map(agent => (
                 <div key={agent.id} className="glass border-glow rounded-lg p-4 flex items-center justify-between">
                   <div className="flex items-center gap-4">
-                    <span className="text-2xl">{agent.icon}</span>
+                    <Bot className="h-6 w-6 text-blue-400" />
                     <div>
                       <h3 className="font-semibold">{agent.name}</h3>
                       <p className="text-xs text-muted-foreground">Deployed {new Date(agent.deployedAt).toLocaleDateString()}</p>
+                      <p className="text-xs text-muted-foreground">{agent.description || 'No description available.'}</p>
                     </div>
                   </div>
                   <div className="flex items-center gap-4">
@@ -102,22 +116,38 @@ export default function DashboardPage() {
           ) : (
             <div className="glass border-glow rounded-lg overflow-hidden">
               <div className="overflow-x-auto">
-                <table className="w-full text-sm">
-                  <thead>
-                    <tr className="border-b border-border/50">
-                      <th className="px-4 py-3 text-left font-semibold">Time</th>
-                      <th className="px-4 py-3 text-left font-semibold">Amount</th>
-                      <th className="px-4 py-3 text-left font-semibold">Status</th>
-                      <th className="px-4 py-3 text-left font-semibold">Description</th>
+                <table className="min-w-full divide-y divide-border/50">
+                  <thead className="bg-muted/20">
+                    <tr>
+                      <th scope="col" className="px-4 py-3 text-left text-xs font-semibold text-muted-foreground uppercase tracking-wider">
+                        <div className="flex items-center gap-2">
+                          <Clock size={16} /> <span>Time</span>
+                        </div>
+                      </th>
+                      <th scope="col" className="px-4 py-3 text-left text-xs font-semibold text-muted-foreground uppercase tracking-wider">
+                        <div className="flex items-center gap-2">
+                          <DollarSign size={16} /> <span>Amount</span>
+                        </div>
+                      </th>
+                      <th scope="col" className="px-4 py-3 text-left text-xs font-semibold text-muted-foreground uppercase tracking-wider">
+                        <div className="flex items-center gap-2">
+                          <TrendingUp size={16} /> <span>Status</span>
+                        </div>
+                      </th>
+                      <th scope="col" className="px-4 py-3 text-left text-xs font-semibold text-muted-foreground uppercase tracking-wider">
+                        <div className="flex items-center gap-2">
+                          <FileText size={16} /> <span>Description</span>
+                        </div>
+                      </th>
                     </tr>
                   </thead>
-                  <tbody>
+                  <tbody className="divide-y divide-border/50">
                     {recentLogs.map(log => (
-                      <tr key={log.id} className="border-b border-border/50 hover:bg-primary/10 transition-colors">
-                        <td className="px-4 py-3">{new Date(log.timestamp).toLocaleTimeString()}</td>
-                        <td className="px-4 py-3 text-primary">${log.amount.toFixed(4)}</td>
-                        <td className="px-4 py-3">
-                          <span className={`text-xs px-2 py-1 rounded ${
+                      <tr key={log.id} className="hover:bg-primary/10 transition-colors">
+                        <td className="px-4 py-3 whitespace-nowrap">{new Date(log.timestamp).toLocaleTimeString()}</td>
+                        <td className="px-4 py-3 whitespace-nowrap text-primary">${log.amount.toFixed(4)}</td>
+                        <td className="px-4 py-3 whitespace-nowrap">
+                          <span className={`text-xs px-2 py-1 rounded-full ${
                             log.status === 'completed' ? 'bg-green-500/20 text-green-300' : 'bg-yellow-500/20 text-yellow-300'
                           }`}>
                             {log.status}
