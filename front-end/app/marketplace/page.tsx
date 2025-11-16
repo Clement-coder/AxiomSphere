@@ -1,15 +1,15 @@
 'use client';
 
-import { useEffect, useState } from 'react';
+import React, { useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
-import { getUser, getAgents, getDeployedAgents, addDeployedAgent, removeDeployedAgent, updateUser } from '@/lib/storage';
+import { getUser, getAgents, getDeployedAgents, addDeployedAgent, deleteDeployedAgent, updateUser } from '@/lib/storage';
 
 import { ModalBase } from '@/components/modal-base';
 import { AlertBox } from '@/components/alert-box';
 import { ButtonWithIcon } from '@/components/button-with-icon';
 import { Rocket, AlertCircle, CheckCircle, Bot, TrendingUp, DollarSign, Shield, Zap, Code, Settings, MinusCircle } from 'lucide-react';
 
-const agentIcons: { [key: string]: JSX.Element } = {
+const agentIcons: { [key: string]: React.ReactNode } = {
   'trading-bot': <TrendingUp className="h-12 w-12 text-blue-400" />,
   'defi-strategist': <DollarSign className="h-12 w-12 text-green-400" />,
   'security-auditor': <Shield className="h-12 w-12 text-red-400" />,
@@ -151,7 +151,7 @@ export default function MarketplacePage() {
                     label="Withdraw"
                     onClick={() => handleWithdraw(deployed.find(a => a.agentId === agent.id))}
                     size="sm"
-                    variant="destructive"
+                    variant="danger"
                   />
                 ) : (
                   <ButtonWithIcon
