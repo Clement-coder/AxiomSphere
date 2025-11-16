@@ -8,7 +8,7 @@ import { IconInput } from '@/components/icon-input';
 import { ModalBase } from '@/components/modal-base';
 import { AlertBox } from '@/components/alert-box';
 import { ButtonWithIcon } from '@/components/button-with-icon';
-import { Mail, Save, Trash2, CheckCircle, AlertCircle, LogOut } from 'lucide-react';
+import { Mail, Save, Trash2, CheckCircle, AlertCircle, LogOut, Lock, Bell, PlugZap, CreditCard , Zap, Code} from 'lucide-react';
 import { validationRules } from '@/lib/validation';
 
 export default function SettingsPage() {
@@ -80,7 +80,7 @@ export default function SettingsPage() {
 
   return (
     <>
-      <div className="space-y-8 max-w-2xl">
+      <div className="space-y-8 max-w-2xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
         <div>
           <h1 className="text-3xl font-bold mb-2">Settings</h1>
           <p className="text-muted-foreground">
@@ -107,6 +107,61 @@ export default function SettingsPage() {
               icon={Save}
               label="Save Changes"
               onClick={handleUpdateProfile}
+            />
+          </div>
+        </div>
+
+        {/* Security Settings */}
+        <div className="glass border-glow rounded-lg p-6">
+          <h3 className="text-lg font-semibold mb-4 flex items-center gap-2">
+            <Lock size={20} className="text-primary" />
+            Security Settings
+          </h3>
+          <div className="space-y-4 sm:flex sm:space-y-0 sm:space-x-4">
+            <ButtonWithIcon
+              icon={CreditCard}
+              label="Change Password"
+              onClick={() => setAlert({ show: true, type: 'success', title: 'Feature Coming Soon', message: 'Password change functionality is under development.' })}
+            />
+            <ButtonWithIcon
+              icon={Zap}
+              label="Enable Two-Factor Authentication"
+              onClick={() => setAlert({ show: true, type: 'success', title: 'Feature Coming Soon', message: 'Two-Factor Authentication is under development.' })}
+            />
+          </div>
+        </div>
+
+        {/* Notification Settings */}
+        <div className="glass border-glow rounded-lg p-6">
+          <h3 className="text-lg font-semibold mb-4 flex items-center gap-2">
+            <Bell size={20} className="text-primary" />
+            Notification Settings
+          </h3>
+          <div className="space-y-4 sm:flex sm:space-y-0 sm:space-x-4">
+            <ButtonWithIcon
+              icon={Mail}
+              label="Email Notifications"
+              onClick={() => setAlert({ show: true, type: 'success', title: 'Feature Coming Soon', message: 'Email notification preferences are under development.' })}
+            />
+            <ButtonWithIcon
+              icon={AlertCircle}
+              label="In-App Notifications"
+              onClick={() => setAlert({ show: true, type: 'success', title: 'Feature Coming Soon', message: 'In-app notification preferences are under development.' })}
+            />
+          </div>
+        </div>
+
+        {/* Integration Settings */}
+        <div className="glass border-glow rounded-lg p-6">
+          <h3 className="text-lg font-semibold mb-4 flex items-center gap-2">
+            <PlugZap size={20} className="text-primary" />
+            Integration Settings
+          </h3>
+          <div className="space-y-4">
+            <ButtonWithIcon
+              icon={Code}
+              label="Connect to API"
+              onClick={() => setAlert({ show: true, type: 'success', title: 'Feature Coming Soon', message: 'API integration settings are under development.' })}
             />
           </div>
         </div>

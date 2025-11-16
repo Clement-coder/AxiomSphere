@@ -52,7 +52,7 @@ export default function RootLayout({ children }: LayoutProps) {
     setIsNotificationPanelOpen(!isNotificationPanelOpen);
   };
 
-  if (loading || (!user && pathname !== '/')) {
+  if (loading) {
     return (
       <html lang="en">
         <body>
@@ -74,6 +74,10 @@ export default function RootLayout({ children }: LayoutProps) {
         </body>
       </html>
     );
+  }
+
+  if (!user && pathname !== '/') {
+    return null; // Redirect will happen via useEffect
   }
 
   if (!user && pathname === '/') {

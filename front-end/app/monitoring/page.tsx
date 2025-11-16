@@ -7,7 +7,7 @@ import { getUser, getLogs, addLog, clearLogs } from '@/lib/storage';
 import { ModalBase } from '@/components/modal-base';
 import { AlertBox } from '@/components/alert-box';
 import { ButtonWithIcon } from '@/components/button-with-icon';
-import { Eraser, Eye, CheckCircle, AlertCircle, TrendingUp } from 'lucide-react';
+import { Eraser, Eye, CheckCircle, AlertCircle, TrendingUp, Clock, DollarSign, FileText, Filter, Bot } from 'lucide-react';
 
 export default function MonitoringPage() {
   const router = useRouter();
@@ -110,14 +110,14 @@ export default function MonitoringPage() {
         <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
           <div className="glass border-glow rounded-lg p-6 glow">
             <div className="flex items-center gap-2 mb-2">
-              <TrendingUp size={16} className="text-primary" />
+              <DollarSign size={16} className="text-primary" />
               <span className="text-sm text-muted-foreground">Total Value Transferred</span>
             </div>
             <div className="text-2xl font-bold text-primary">${totalValue.toFixed(4)} USDC</div>
           </div>
           <div className="glass border-glow rounded-lg p-6 glow">
             <div className="flex items-center gap-2 mb-2">
-              <Eye size={16} className="text-accent" />
+              <TrendingUp size={16} className="text-accent" />
               <span className="text-sm text-muted-foreground">Total Transactions</span>
             </div>
             <div className="text-2xl font-bold text-accent">{logs.length}</div>
@@ -133,12 +133,13 @@ export default function MonitoringPage() {
 
         {/* Controls */}
         <div className="flex items-center justify-between gap-4 flex-wrap">
-          <div className="flex gap-2">
+          <div className="flex gap-2 items-center">
+            <Filter size={16} className="text-muted-foreground" />
             {['all', 'pending', 'completed'].map(f => (
               <button
                 key={f}
                 onClick={() => handleFilterChange(f)}
-                className={`px-4 py-2 rounded text-sm font-medium transition-all ${
+                className={`px-4 py-2 rounded-md text-sm font-medium transition-all ${
                   filter === f
                     ? 'bg-primary/20 border border-primary/50 text-primary'
                     : 'bg-muted/20 border border-muted/50 hover:bg-muted/30'
@@ -160,17 +161,37 @@ export default function MonitoringPage() {
         {/* Logs Table */}
         <div className="glass border-glow rounded-lg overflow-hidden">
           <div className="overflow-x-auto">
-            <table className="w-full text-sm">
-              <thead>
-                <tr className="border-b border-border/50 bg-muted/10">
-                  <th className="px-4 py-3 text-left font-semibold">Timestamp</th>
-                  <th className="px-4 py-3 text-left font-semibold">Agent</th>
-                  <th className="px-4 py-3 text-left font-semibold">Amount (USDC)</th>
-                  <th className="px-4 py-3 text-left font-semibold">Status</th>
-                  <th className="px-4 py-3 text-left font-semibold">Description</th>
+            <table className="min-w-full divide-y divide-border/50">
+              <thead className="bg-muted/20">
+                <tr>
+                  <th scope="col" className="px-4 py-3 text-left text-xs font-semibold text-muted-foreground uppercase tracking-wider">
+                    <div className="flex items-center gap-2">
+                      <Clock size={14} /> <span>Timestamp</span>
+                    </div>
+                  </th>
+                  <th scope="col" className="px-4 py-3 text-left text-xs font-semibold text-muted-foreground uppercase tracking-wider">
+                    <div className="flex items-center gap-2">
+                      <Bot size={14} /> <span>Agent</span>
+                    </div>
+                  </th>
+                  <th scope="col" className="px-4 py-3 text-left text-xs font-semibold text-muted-foreground uppercase tracking-wider">
+                    <div className="flex items-center gap-2">
+                      <DollarSign size={14} /> <span>Amount (USDC)</span>
+                    </div>
+                  </th>
+                  <th scope="col" className="px-4 py-3 text-left text-xs font-semibold text-muted-foreground uppercase tracking-wider">
+                    <div className="flex items-center gap-2">
+                      <TrendingUp size={14} /> <span>Status</span>
+                    </div>
+                  </th>
+                  <th scope="col" className="px-4 py-3 text-left text-xs font-semibold text-muted-foreground uppercase tracking-wider">
+                    <div className="flex items-center gap-2">
+                      <FileText size={14} /> <span>Description</span>
+                    </div>
+                  </th>
                 </tr>
               </thead>
-              <tbody>
+              <tbody className="divide-y divide-border/50">
                 {filteredLogs.length === 0 ? (
                   <tr>
                     <td colSpan={5} className="px-4 py-8 text-center text-muted-foreground">
@@ -180,13 +201,13 @@ export default function MonitoringPage() {
                   </tr>
                 ) : (
                   filteredLogs.map(log => (
-                    <tr key={log.id} className="border-b border-border/50 hover:bg-primary/10 transition-colors">
-                      <td className="px-4 py-3 text-xs">{new Date(log.timestamp).toLocaleString()}</td>
-                      <td className="px-4 py-3 font-mono text-xs text-primary">Agent #{log.agentId}</td>
-                      <td className="px-4 py-3 text-primary font-semibold">${log.amount.toFixed(4)}</td>
-                      <td className="px-4 py-3">
+                    <tr key={log.id} className="hover:bg-primary/10 transition-colors">
+                      <td className="px-4 py-3 text-xs whitespace-nowrap">{new Date(log.timestamp).toLocaleString()}</td>
+                      <td className="px-4 py-3 font-mono text-xs text-primary whitespace-nowrap">Agent #{log.agentId}</td>
+                      <td className="px-4 py-3 text-primary font-semibold whitespace-nowrap">${log.amount.toFixed(4)}</td>
+                      <td className="px-4 py-3 whitespace-nowrap">
                         <span
-                          className={`text-xs px-2 py-1 rounded font-medium inline-flex items-center gap-1 ${
+                          className={`text-xs px-2 py-1 rounded-full font-medium inline-flex items-center gap-1 ${
                             log.status === 'completed'
                               ? 'bg-green-500/20 text-green-300'
                               : 'bg-yellow-500/20 text-yellow-300'

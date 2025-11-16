@@ -2,20 +2,30 @@
 
 import { useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
-import { getUser, getAgents, getDeployedAgents, addDeployedAgent, updateUser } from '@/lib/storage';
+import { getUser, getAgents, getDeployedAgents, addDeployedAgent, removeDeployedAgent, updateUser } from '@/lib/storage';
 
 import { ModalBase } from '@/components/modal-base';
 import { AlertBox } from '@/components/alert-box';
 import { ButtonWithIcon } from '@/components/button-with-icon';
-import { Rocket, AlertCircle, CheckCircle } from 'lucide-react';
+import { Rocket, AlertCircle, CheckCircle, Bot, TrendingUp, DollarSign, Shield, Zap, Code, Settings, MinusCircle } from 'lucide-react';
+
+const agentIcons: { [key: string]: JSX.Element } = {
+  'trading-bot': <TrendingUp className="h-12 w-12 text-blue-400" />,
+  'defi-strategist': <DollarSign className="h-12 w-12 text-green-400" />,
+  'security-auditor': <Shield className="h-12 w-12 text-red-400" />,
+  'data-analyst': <Zap className="h-12 w-12 text-purple-400" />,
+  'custom-agent': <Code className="h-12 w-12 text-yellow-400" />,
+  'default': <Bot className="h-12 w-12 text-gray-400" />,
+};
 
 export default function MarketplacePage() {
   const router = useRouter();
   const [user, setUser] = useState<any>(null);
   const [agents, setAgents] = useState<any[]>([]);
-  const [deployed, setDeployed] = useState<string[]>([]);
+  const [deployed, setDeployed] = useState<any[]>([]);
   const [selectedAgent, setSelectedAgent] = useState<any>(null);
-  const [showConfirmation, setShowConfirmation] = useState(false);
+  const [showDeployConfirmation, setShowDeployConfirmation] = useState(false);
+  const [showWithdrawConfirmation, setShowWithdrawConfirmation] = useState(false);
   const [alert, setAlert] = useState<{
     show: boolean;
     type: 'success' | 'error';
@@ -36,7 +46,7 @@ export default function MarketplacePage() {
     }
     setUser(currentUser);
     setAgents(getAgents());
-    setDeployed(getDeployedAgents().map(a => a.agentId));
+    setDeployed(getDeployedAgents());
   }, [router]);
 
   const handleDeploy = (agent: any) => {
@@ -50,7 +60,7 @@ export default function MarketplacePage() {
       return;
     }
     setSelectedAgent(agent);
-    setShowConfirmation(true);
+    setShowDeployConfirmation(true);
   };
 
   const confirmDeploy = () => {
@@ -63,13 +73,14 @@ export default function MarketplacePage() {
       deployedAt: new Date().toISOString(),
       status: 'active' as const,
       config: {},
+      price: selectedAgent.price, // Store price for withdrawal
     };
 
     addDeployedAgent(newAgent);
     const updatedUser = { ...user, balance: user.balance - selectedAgent.price };
     updateUser(updatedUser);
     setUser(updatedUser);
-    setDeployed([...deployed, selectedAgent.id]);
+    setDeployed([...deployed, newAgent]);
 
     setAlert({
       show: true,
@@ -78,13 +89,38 @@ export default function MarketplacePage() {
       message: `${selectedAgent.name} is now running with autonomous execution enabled. Session key initialized.`,
     });
 
-    setShowConfirmation(false);
+    setShowDeployConfirmation(false);
+    setSelectedAgent(null);
+  };
+
+  const handleWithdraw = (agent: any) => {
+    setSelectedAgent(agent);
+    setShowWithdrawConfirmation(true);
+  };
+
+  const confirmWithdraw = () => {
+    if (!selectedAgent) return;
+
+    deleteDeployedAgent(selectedAgent.id);
+    const updatedUser = { ...user, balance: user.balance + selectedAgent.price }; // Refund
+    updateUser(updatedUser);
+    setUser(updatedUser);
+    setDeployed(deployed.filter(a => a.id !== selectedAgent.id));
+
+    setAlert({
+      show: true,
+      type: 'success',
+      title: 'Agent Withdrawn',
+      message: `${selectedAgent.name} has been successfully withdrawn. $${selectedAgent.price.toFixed(2)} USDC refunded.`,
+    });
+
+    setShowWithdrawConfirmation(false);
     setSelectedAgent(null);
   };
 
   if (!user) return null;
 
-  const agent = selectedAgent;
+  const agent = selectedAgent; // For modal context
 
   return (
     <>
@@ -102,15 +138,21 @@ export default function MarketplacePage() {
               key={agent.id}
               className="glass border-glow rounded-lg p-6 glow hover:border-primary/60 transition-all duration-300 hover:scale-105 group flex flex-col h-full"
             >
-              <div className="text-5xl mb-4 group-hover:scale-110 transition-transform">{agent.icon}</div>
+              <div className="text-5xl mb-4 group-hover:scale-110 transition-transform">
+                {agentIcons[agent.type] || agentIcons['default']}
+              </div>
               <h3 className="text-lg font-semibold mb-2">{agent.name}</h3>
               <p className="text-sm text-muted-foreground mb-4 flex-grow">{agent.description}</p>
               <div className="flex items-center justify-between pt-4 border-t border-border/50">
                 <span className="text-primary font-bold">{agent.price.toFixed(2)} USDC</span>
-                {deployed.includes(agent.id) ? (
-                  <span className="px-3 py-1.5 text-xs font-medium bg-green-500/20 border border-green-500/50 text-green-300 rounded">
-                    Active
-                  </span>
+                {deployed.some(a => a.agentId === agent.id) ? (
+                  <ButtonWithIcon
+                    icon={MinusCircle}
+                    label="Withdraw"
+                    onClick={() => handleWithdraw(deployed.find(a => a.agentId === agent.id))}
+                    size="sm"
+                    variant="destructive"
+                  />
                 ) : (
                   <ButtonWithIcon
                     icon={Rocket}
@@ -128,14 +170,25 @@ export default function MarketplacePage() {
       </div>
 
       <ModalBase
-        isOpen={showConfirmation}
+        isOpen={showDeployConfirmation}
         title="Deploy Agent?"
-        description={`You are about to deploy ${agent?.name} for ${agent?.price.toFixed(2)} USDC. This will initialize a session key for autonomous execution.`}
+        description={`You are about to deploy ${agent?.name || 'this agent'} for ${agent?.price ? agent.price.toFixed(2) : 'N/A'} USDC. This will initialize a session key for autonomous execution.`}
         icon={Rocket}
         confirmLabel="Deploy Agent"
         cancelLabel="Cancel"
         onConfirm={confirmDeploy}
-        onCancel={() => setShowConfirmation(false)}
+        onCancel={() => setShowDeployConfirmation(false)}
+      />
+
+      <ModalBase
+        isOpen={showWithdrawConfirmation}
+        title="Withdraw Agent?"
+        description={`Are you sure you want to withdraw ${agent?.name || 'this agent'}? You will be refunded $${agent?.price ? agent.price.toFixed(2) : 'N/A'} USDC.`}
+        icon={MinusCircle}
+        confirmLabel="Withdraw Agent"
+        cancelLabel="Cancel"
+        onConfirm={confirmWithdraw}
+        onCancel={() => setShowWithdrawConfirmation(false)}
       />
 
       {alert.show && (
