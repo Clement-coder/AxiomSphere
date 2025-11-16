@@ -77,7 +77,27 @@ export default function RootLayout({ children }: LayoutProps) {
   }
 
   if (!user && pathname !== '/') {
-    return null; // Redirect will happen via useEffect
+    return (
+      <html lang="en">
+        <body>
+          <div className="flex min-h-screen bg-background text-foreground">
+            <Sidebar isOpen={isSidebarOpen} onClose={() => setIsSidebarOpen(false)} />
+            <div className="flex-1 flex flex-col md:ml-64">
+              <Navbar
+                onMenuClick={handleSidebarToggle}
+                onSearchClick={handleSearchModalToggle}
+                onNotificationClick={handleNotificationPanelToggle}
+              />
+              <main className="flex-1 p-8">
+                <SkeletonLoader />
+              </main>
+            </div>
+            <SearchModal isOpen={isSearchModalOpen} onClose={() => setIsSearchModalOpen(false)} />
+            <NotificationPanel isOpen={isNotificationPanelOpen} onClose={() => setIsNotificationPanelOpen(false)} />
+          </div>
+        </body>
+      </html>
+    );
   }
 
   if (!user && pathname === '/') {
