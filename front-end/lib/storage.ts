@@ -3,6 +3,7 @@ export interface User {
   email: string;
   password: string;
   balance: number;
+  username?: string; // Made username optional
 }
 
 export interface Agent {
@@ -19,7 +20,8 @@ export interface DeployedAgent {
   name: string;
   deployedAt: string;
   status: 'active' | 'paused' | 'stopped';
-  config: Record<string, any>;
+  config: Record<string, any>; // Detailed configuration for the agent
+  price: number; // Add price to deployed agent for refund logic
 }
 
 export interface AutomationRule {

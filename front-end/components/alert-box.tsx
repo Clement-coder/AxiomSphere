@@ -1,7 +1,7 @@
 'use client';
 
 import { type LucideIcon, X } from 'lucide-react';
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 
 interface AlertBoxProps {
   icon?: LucideIcon;
@@ -10,6 +10,7 @@ interface AlertBoxProps {
   type: 'success' | 'error' | 'warning' | 'info';
   onDismiss?: () => void;
   dismissible?: boolean;
+  duration?: number; // New prop for auto-dismiss duration
 }
 
 export function AlertBox({
@@ -19,8 +20,18 @@ export function AlertBox({
   type,
   onDismiss,
   dismissible = true,
+  duration = 5000, // Default to 5 seconds
 }: AlertBoxProps) {
   const [isVisible, setIsVisible] = useState(true);
+
+  useEffect(() => {
+    if (isVisible && duration > 0) {
+      const timer = setTimeout(() => {
+        handleDismiss();
+      }, duration);
+      return () => clearTimeout(timer);
+    }
+  }, [isVisible, duration]);
 
   const handleDismiss = () => {
     setIsVisible(false);
@@ -62,7 +73,7 @@ export function AlertBox({
 
   return (
     <div
-      className={`${colors.bg} border ${colors.border} rounded-lg p-4 flex gap-4 animate-in fade-in slide-in-from-top-2 duration-300`}
+      className={`fixed bottom-4 left-4 z-50 w-full max-w-sm ${colors.bg} border ${colors.border} rounded-lg p-4 flex gap-4 animate-in fade-in slide-in-from-bottom-2 duration-300`}
     >
       {Icon && <Icon size={20} className={`flex-shrink-0 mt-0.5 ${colors.icon}`} />}
       <div className="flex-1">

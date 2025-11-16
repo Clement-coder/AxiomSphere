@@ -74,6 +74,7 @@ export default function AuthPage() {
       email,
       password,
       balance: 1000,
+      username: email.split('@')[0], // Default username from email
     };
 
     storeUser(user);

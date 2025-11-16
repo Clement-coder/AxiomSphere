@@ -7,7 +7,8 @@ import { getUser, getAgents, getDeployedAgents, addDeployedAgent, deleteDeployed
 import { ModalBase } from '@/components/modal-base';
 import { AlertBox } from '@/components/alert-box';
 import { ButtonWithIcon } from '@/components/button-with-icon';
-import { Rocket, AlertCircle, CheckCircle, Bot, TrendingUp, DollarSign, Shield, Zap, Code, Settings, MinusCircle } from 'lucide-react';
+import { Rocket, AlertCircle, CheckCircle, Bot, TrendingUp, DollarSign, Shield, Zap, Code, Settings, MinusCircle, Settings2 } from 'lucide-react';
+import { FuturisticInput } from '@/components/futuristic-input';
 
 const agentIcons: { [key: string]: React.ReactNode } = {
   'trading-bot': <TrendingUp className="h-12 w-12 text-blue-400" />,
@@ -26,6 +27,9 @@ export default function MarketplacePage() {
   const [selectedAgent, setSelectedAgent] = useState<any>(null);
   const [showDeployConfirmation, setShowDeployConfirmation] = useState(false);
   const [showWithdrawConfirmation, setShowWithdrawConfirmation] = useState(false);
+  const [showConfigureModal, setShowConfigureModal] = useState(false);
+  const [currentConfig, setCurrentConfig] = useState<string>('{}');
+  const [configError, setConfigError] = useState<string | null>(null);
   const [alert, setAlert] = useState<{
     show: boolean;
     type: 'success' | 'error';
@@ -60,37 +64,45 @@ export default function MarketplacePage() {
       return;
     }
     setSelectedAgent(agent);
+    setCurrentConfig(JSON.stringify(agent.defaultConfig || {}, null, 2));
     setShowDeployConfirmation(true);
   };
 
   const confirmDeploy = () => {
     if (!selectedAgent) return;
 
-    const newAgent = {
-      id: Math.random().toString(36).substr(2, 9),
-      agentId: selectedAgent.id,
-      name: selectedAgent.name,
-      deployedAt: new Date().toISOString(),
-      status: 'active' as const,
-      config: {},
-      price: selectedAgent.price, // Store price for withdrawal
-    };
+    try {
+      const parsedConfig = JSON.parse(currentConfig);
+      setConfigError(null);
 
-    addDeployedAgent(newAgent);
-    const updatedUser = { ...user, balance: user.balance - selectedAgent.price };
-    updateUser(updatedUser);
-    setUser(updatedUser);
-    setDeployed([...deployed, newAgent]);
+      const newAgent = {
+        id: Math.random().toString(36).substr(2, 9),
+        agentId: selectedAgent.id,
+        name: selectedAgent.name,
+        deployedAt: new Date().toISOString(),
+        status: 'active' as const,
+        config: parsedConfig,
+        price: selectedAgent.price,
+      };
 
-    setAlert({
-      show: true,
-      type: 'success',
-      title: 'Agent Successfully Deployed',
-      message: `${selectedAgent.name} is now running with autonomous execution enabled. Session key initialized.`,
-    });
+      addDeployedAgent(newAgent);
+      const updatedUser = { ...user, balance: user.balance - selectedAgent.price };
+      updateUser(updatedUser);
+      setUser(updatedUser);
+      setDeployed([...deployed, newAgent]);
 
-    setShowDeployConfirmation(false);
-    setSelectedAgent(null);
+      setAlert({
+        show: true,
+        type: 'success',
+        title: 'Agent Successfully Deployed',
+        message: `${selectedAgent.name} is now running with autonomous execution enabled. Session key initialized.`,
+      });
+
+      setShowDeployConfirmation(false);
+      setSelectedAgent(null);
+    } catch (e) {
+      setConfigError('Invalid JSON configuration.');
+    }
   };
 
   const handleWithdraw = (agent: any) => {
@@ -116,6 +128,33 @@ export default function MarketplacePage() {
 
     setShowWithdrawConfirmation(false);
     setSelectedAgent(null);
+  };
+
+  const handleConfigure = (agent: any) => {
+    setSelectedAgent(agent);
+    setCurrentConfig(JSON.stringify(agent.config || {}, null, 2));
+    setShowConfigureModal(true);
+  };
+
+  const saveConfiguration = () => {
+    if (!selectedAgent) return;
+    try {
+      const parsedConfig = JSON.parse(currentConfig);
+      setConfigError(null);
+      // In a real app, you'd update the agent's config in storage
+      // For now, we'll just update the local state for demonstration
+      setDeployed(deployed.map(a => a.id === selectedAgent.id ? { ...a, config: parsedConfig } : a));
+      setAlert({
+        show: true,
+        type: 'success',
+        title: 'Configuration Saved',
+        message: `${selectedAgent.name} configuration updated.`,
+      });
+      setShowConfigureModal(false);
+      setSelectedAgent(null);
+    } catch (e) {
+      setConfigError('Invalid JSON configuration.');
+    }
   };
 
   if (!user) return null;
@@ -146,13 +185,22 @@ export default function MarketplacePage() {
               <div className="flex items-center justify-between pt-4 border-t border-border/50">
                 <span className="text-primary font-bold">{agent.price.toFixed(2)} USDC</span>
                 {deployed.some(a => a.agentId === agent.id) ? (
-                  <ButtonWithIcon
-                    icon={MinusCircle}
-                    label="Withdraw"
-                    onClick={() => handleWithdraw(deployed.find(a => a.agentId === agent.id))}
-                    size="sm"
-                    variant="danger"
-                  />
+                  <div className="flex gap-2">
+                    <ButtonWithIcon
+                      icon={Settings2}
+                      label="Configure"
+                      onClick={() => handleConfigure(deployed.find(a => a.agentId === agent.id))}
+                      size="sm"
+                      variant="secondary"
+                    />
+                    <ButtonWithIcon
+                      icon={MinusCircle}
+                      label="Withdraw"
+                      onClick={() => handleWithdraw(deployed.find(a => a.agentId === agent.id))}
+                      size="sm"
+                      variant="danger"
+                    />
+                  </div>
                 ) : (
                   <ButtonWithIcon
                     icon={Rocket}
@@ -178,7 +226,17 @@ export default function MarketplacePage() {
         cancelLabel="Cancel"
         onConfirm={confirmDeploy}
         onCancel={() => setShowDeployConfirmation(false)}
-      />
+      >
+        <div className="mt-4">
+          <label className="block text-sm font-medium mb-2 text-muted-foreground">Agent Configuration (JSON)</label>
+          <textarea
+            className={`w-full p-2 bg-input border rounded-md text-foreground focus:outline-none focus:border-primary focus:ring-1 focus:ring-primary transition-all duration-200 h-32 font-mono text-xs ${configError ? 'border-destructive/50' : 'border-border/50'}`}
+            value={currentConfig}
+            onChange={(e) => setCurrentConfig(e.target.value)}
+          ></textarea>
+          {configError && <p className="text-destructive text-xs mt-1">{configError}</p>}
+        </div>
+      </ModalBase>
 
       <ModalBase
         isOpen={showWithdrawConfirmation}
@@ -190,6 +248,27 @@ export default function MarketplacePage() {
         onConfirm={confirmWithdraw}
         onCancel={() => setShowWithdrawConfirmation(false)}
       />
+
+      <ModalBase
+        isOpen={showConfigureModal}
+        title={`Configure ${agent?.name || 'Agent'}`}
+        description="Edit the JSON configuration for this deployed agent."
+        icon={Settings2}
+        confirmLabel="Save Configuration"
+        cancelLabel="Cancel"
+        onConfirm={saveConfiguration}
+        onCancel={() => setShowConfigureModal(false)}
+      >
+        <div className="mt-4">
+          <label className="block text-sm font-medium mb-2 text-muted-foreground">Agent Configuration (JSON)</label>
+          <textarea
+            className={`w-full p-2 bg-input border rounded-md text-foreground focus:outline-none focus:border-primary focus:ring-1 focus:ring-primary transition-all duration-200 h-48 font-mono text-xs ${configError ? 'border-destructive/50' : 'border-border/50'}`}
+            value={currentConfig}
+            onChange={(e) => setCurrentConfig(e.target.value)}
+          ></textarea>
+          {configError && <p className="text-destructive text-xs mt-1">{configError}</p>}
+        </div>
+      </ModalBase>
 
       {alert.show && (
         <AlertBox

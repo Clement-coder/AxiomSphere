@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
-import { getUser, getDeployedAgents, getLogs } from '@/lib/storage';
+import { getUser, getDeployedAgents, getLogs, updateUser } from '@/lib/storage';
 import { DollarSign, Users, Repeat, Activity, Bot, Clock, TrendingUp, FileText } from 'lucide-react';
 
 
@@ -21,6 +21,34 @@ export default function DashboardPage() {
     setUser(currentUser);
     setDeployedAgents(getDeployedAgents());
     setRecentLogs(getLogs().slice(-5).reverse());
+
+    // Simulate real-time updates for balance and agent status
+    const interval = setInterval(() => {
+      setUser((prevUser: any) => {
+        if (prevUser) {
+          const newBalance = prevUser.balance + (Math.random() * 0.1 - 0.05); // Simulate small fluctuations
+          const updatedUser = { ...prevUser, balance: newBalance };
+          updateUser(updatedUser); // Update in local storage
+          return updatedUser;
+        }
+        return prevUser;
+      });
+
+      setDeployedAgents((prevAgents: any[]) => {
+        return prevAgents.map(agent => {
+          // Simulate agent status change
+          if (Math.random() < 0.1) { // 10% chance to change status
+            const newStatus = agent.status === 'active' ? 'paused' : 'active';
+            return { ...agent, status: newStatus };
+          }
+          return agent;
+        });
+      });
+
+      setRecentLogs(getLogs().slice(-5).reverse()); // Refresh logs
+    }, 10000); // Update every 10 seconds
+
+    return () => clearInterval(interval);
   }, [router]);
 
   if (!user) return null;
@@ -40,7 +68,7 @@ export default function DashboardPage() {
             <DollarSign className="h-8 w-8 text-primary" />
             <div>
               <div className="text-sm text-muted-foreground">Account Balance</div>
-              <div className="text-2xl font-bold text-primary">${user.balance.toFixed(2)}</div>
+              <div className="text-2xl font-bold text-primary">${user?.balance?.toFixed(2) || 'N/A'}</div>
             </div>
           </div>
           <div className="glass border-glow rounded-lg p-6 glow flex items-center space-x-4">

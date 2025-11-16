@@ -8,7 +8,7 @@ import { IconInput } from '@/components/icon-input';
 import { ModalBase } from '@/components/modal-base';
 import { AlertBox } from '@/components/alert-box';
 import { ButtonWithIcon } from '@/components/button-with-icon';
-import { Plus, Trash2, CheckCircle, AlertCircle, Settings, Zap } from 'lucide-react';
+import { Plus, Trash2, CheckCircle, AlertCircle, Settings, Zap, ToggleRight, ToggleLeft, Code, GitBranch } from 'lucide-react';
 import { validationRules } from '@/lib/validation';
 
 export default function ExecutionPage() {
@@ -162,7 +162,7 @@ export default function ExecutionPage() {
               success={successes.name}
             />
             <IconInput
-              icon={AlertCircle}
+              icon={Code}
               label="Condition"
               placeholder="e.g., price > 50000 OR volume_24h > 1000000"
               value={newRule.condition}
@@ -171,7 +171,7 @@ export default function ExecutionPage() {
               success={successes.condition}
             />
             <IconInput
-              icon={Zap}
+              icon={GitBranch}
               label="Action"
               placeholder="e.g., notify_telegram, execute_trade, or trigger_webhook"
               value={newRule.action}
@@ -199,8 +199,8 @@ export default function ExecutionPage() {
           ) : (
             <div className="space-y-3">
               {rules.map(rule => (
-                <div key={rule.id} className="glass border-glow rounded-lg p-4 flex items-center justify-between group hover:border-primary/50 transition-all">
-                  <div className="flex items-center gap-4 flex-1">
+                <div key={rule.id} className="glass border-glow rounded-lg p-4 flex flex-col md:flex-row items-start md:items-center justify-between group hover:border-primary/50 transition-all">
+                  <div className="flex items-start md:items-center gap-4 flex-1 mb-4 md:mb-0">
                     <label className="flex items-center cursor-pointer">
                       <input
                         type="checkbox"

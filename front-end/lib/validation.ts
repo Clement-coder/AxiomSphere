@@ -41,4 +41,13 @@ export const validationRules = {
       return { valid: true };
     },
   },
+  username: {
+    validate: (value: string) => {
+      if (!value) return { valid: false, error: 'Username is required' };
+      if (value.length < 3) return { valid: false, error: 'Username must be at least 3 characters' };
+      if (value.length > 20) return { valid: false, error: 'Username must be less than 20 characters' };
+      if (!/^[a-zA-Z0-9_]+$/.test(value)) return { valid: false, error: 'Username can only contain letters, numbers, and underscores' };
+      return { valid: true };
+    },
+  },
 };

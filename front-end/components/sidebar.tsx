@@ -1,7 +1,7 @@
 'use client';
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
-import { LogOut, LayoutDashboard, ShoppingCart, Code, BarChart2, Settings, X } from 'lucide-react';
+import { LogOut, LayoutDashboard, ShoppingCart, Code, BarChart2, Settings, X, Wallet as WalletIcon } from 'lucide-react';
 import { deleteUser, getUser } from '@/lib/storage';
 import { useEffect, useState } from 'react';
 
@@ -10,6 +10,7 @@ const navLinks = [
   { href: '/marketplace', label: 'Marketplace', icon: <ShoppingCart size={20} /> },
   { href: '/execution', label: 'Execution', icon: <Code size={20} /> },
   { href: '/monitoring', label: 'Monitoring', icon: <BarChart2 size={20} /> },
+  { href: '/wallet', label: 'Wallet', icon: <WalletIcon size={20} /> },
   { href: '/settings', label: 'Settings', icon: <Settings size={20} /> },
 ];
 

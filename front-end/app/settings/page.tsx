@@ -8,13 +8,22 @@ import { IconInput } from '@/components/icon-input';
 import { ModalBase } from '@/components/modal-base';
 import { AlertBox } from '@/components/alert-box';
 import { ButtonWithIcon } from '@/components/button-with-icon';
-import { Mail, Save, Trash2, CheckCircle, AlertCircle, LogOut, Lock, Bell, PlugZap, CreditCard , Zap, Code} from 'lucide-react';
+import { Mail, Save, Trash2, CheckCircle, AlertCircle, LogOut, Lock, Bell, PlugZap, CreditCard , Zap, Code, KeyRound, ToggleLeft, ToggleRight, User as UserIcon, Upload } from 'lucide-react';
 import { validationRules } from '@/lib/validation';
 
 export default function SettingsPage() {
   const router = useRouter();
   const [user, setUser] = useState<any>(null);
   const [email, setEmail] = useState('');
+  const [username, setUsername] = useState('');
+  const [currentPassword, setCurrentPassword] = useState('');
+  const [newPassword, setNewPassword] = useState('');
+  const [confirmNewPassword, setConfirmNewPassword] = useState('');
+  const [twoFactorEnabled, setTwoFactorEnabled] = useState(false);
+  const [emailNotificationsEnabled, setEmailNotificationsEnabled] = useState(true);
+  const [inAppNotificationsEnabled, setInAppNotificationsEnabled] = useState(true);
+  const [apiConnected, setApiConnected] = useState(false);
+
   const [errors, setErrors] = useState<Record<string, string>>({});
   const [successes, setSuccesses] = useState<Record<string, string>>({});
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
@@ -39,28 +48,65 @@ export default function SettingsPage() {
     }
     setUser(currentUser);
     setEmail(currentUser.email);
+    // Simulate fetching actual settings
+    setTwoFactorEnabled(false);
+    setEmailNotificationsEnabled(true);
+    setInAppNotificationsEnabled(true);
+    setApiConnected(false);
   }, [router]);
 
-  const handleUpdateProfile = () => {
+    const handleUpdateProfile = () => {
     const emailValidation = validationRules.email.validate(email);
+    const usernameValidation = validationRules.username.validate(username);
+    
+    const newErrors: Record<string, string> = {};
     if (!emailValidation.valid) {
-      setErrors({ email: emailValidation.error || '' });
+      newErrors.email = emailValidation.error || '';
+    }
+    if (!usernameValidation.valid) {
+      newErrors.username = usernameValidation.error || '';
+    }
+
+    if (Object.keys(newErrors).length > 0) {
+      setErrors(newErrors);
       return;
     }
 
-    updateUser({ email });
+    updateUser({ email, username }); // Update user with new username
     setErrors({});
-    setSuccesses({ email: 'Email updated successfully' });
+    setSuccesses({ email: 'Email updated successfully', username: 'Username updated successfully' });
     setAlert({
       show: true,
       type: 'success',
       title: 'Profile Updated',
-      message: 'Your account email has been successfully updated.',
+      message: 'Your account profile has been successfully updated.',
     });
 
     setTimeout(() => {
       setSuccesses({});
     }, 3000);
+  };
+
+  const handleChangePassword = () => {
+    if (newPassword !== confirmNewPassword) {
+      setErrors({ confirmNewPassword: 'New passwords do not match.' });
+      return;
+    }
+    if (newPassword.length < 6) {
+      setErrors({ newPassword: 'Password must be at least 6 characters.' });
+      return;
+    }
+    // Simulate password change
+    setAlert({
+      show: true,
+      type: 'success',
+      title: 'Password Changed',
+      message: 'Your password has been successfully updated.',
+    });
+    setCurrentPassword('');
+    setNewPassword('');
+    setConfirmNewPassword('');
+    setErrors({});
   };
 
   const handleDeleteAccount = () => {
@@ -117,17 +163,46 @@ export default function SettingsPage() {
             <Lock size={20} className="text-primary" />
             Security Settings
           </h3>
-          <div className="space-y-4 sm:flex sm:space-y-0 sm:space-x-4">
+          <div className="space-y-4">
+            <h4 className="font-medium text-muted-foreground">Change Password</h4>
+            <IconInput
+              icon={KeyRound}
+              label="Current Password"
+              type="password"
+              value={currentPassword}
+              onChange={setCurrentPassword}
+            />
+            <IconInput
+              icon={KeyRound}
+              label="New Password"
+              type="password"
+              value={newPassword}
+              onChange={setNewPassword}
+              error={errors.newPassword}
+            />
+            <IconInput
+              icon={KeyRound}
+              label="Confirm New Password"
+              type="password"
+              value={confirmNewPassword}
+              onChange={setConfirmNewPassword}
+              error={errors.confirmNewPassword}
+            />
             <ButtonWithIcon
-              icon={CreditCard}
+              icon={Save}
               label="Change Password"
-              onClick={() => setAlert({ show: true, type: 'success', title: 'Feature Coming Soon', message: 'Password change functionality is under development.' })}
+              onClick={handleChangePassword}
             />
-            <ButtonWithIcon
-              icon={Zap}
-              label="Enable Two-Factor Authentication"
-              onClick={() => setAlert({ show: true, type: 'success', title: 'Feature Coming Soon', message: 'Two-Factor Authentication is under development.' })}
-            />
+
+            <div className="flex items-center justify-between p-3 bg-muted/10 rounded border border-border/50">
+              <div className="flex items-center gap-2">
+                <Zap size={20} className="text-primary" />
+                <p className="text-sm font-medium">Two-Factor Authentication</p>
+              </div>
+              <button onClick={() => setTwoFactorEnabled(!twoFactorEnabled)}>
+                {twoFactorEnabled ? <ToggleRight size={24} className="text-green-500" /> : <ToggleLeft size={24} className="text-muted-foreground" />}
+              </button>
+            </div>
           </div>
         </div>
 
@@ -137,17 +212,25 @@ export default function SettingsPage() {
             <Bell size={20} className="text-primary" />
             Notification Settings
           </h3>
-          <div className="space-y-4 sm:flex sm:space-y-0 sm:space-x-4">
-            <ButtonWithIcon
-              icon={Mail}
-              label="Email Notifications"
-              onClick={() => setAlert({ show: true, type: 'success', title: 'Feature Coming Soon', message: 'Email notification preferences are under development.' })}
-            />
-            <ButtonWithIcon
-              icon={AlertCircle}
-              label="In-App Notifications"
-              onClick={() => setAlert({ show: true, type: 'success', title: 'Feature Coming Soon', message: 'In-app notification preferences are under development.' })}
-            />
+          <div className="space-y-4">
+            <div className="flex items-center justify-between p-3 bg-muted/10 rounded border border-border/50">
+              <div className="flex items-center gap-2">
+                <Mail size={20} className="text-primary" />
+                <p className="text-sm font-medium">Email Notifications</p>
+              </div>
+              <button onClick={() => setEmailNotificationsEnabled(!emailNotificationsEnabled)}>
+                {emailNotificationsEnabled ? <ToggleRight size={24} className="text-green-500" /> : <ToggleLeft size={24} className="text-muted-foreground" />}
+              </button>
+            </div>
+            <div className="flex items-center justify-between p-3 bg-muted/10 rounded border border-border/50">
+              <div className="flex items-center gap-2">
+                <AlertCircle size={20} className="text-primary" />
+                <p className="text-sm font-medium">In-App Notifications</p>
+              </div>
+              <button onClick={() => setInAppNotificationsEnabled(!inAppNotificationsEnabled)}>
+                {inAppNotificationsEnabled ? <ToggleRight size={24} className="text-green-500" /> : <ToggleLeft size={24} className="text-muted-foreground" />}
+              </button>
+            </div>
           </div>
         </div>
 
@@ -158,11 +241,15 @@ export default function SettingsPage() {
             Integration Settings
           </h3>
           <div className="space-y-4">
-            <ButtonWithIcon
-              icon={Code}
-              label="Connect to API"
-              onClick={() => setAlert({ show: true, type: 'success', title: 'Feature Coming Soon', message: 'API integration settings are under development.' })}
-            />
+            <div className="flex items-center justify-between p-3 bg-muted/10 rounded border border-border/50">
+              <div className="flex items-center gap-2">
+                <Code size={20} className="text-primary" />
+                <p className="text-sm font-medium">Connect to API</p>
+              </div>
+              <button onClick={() => setApiConnected(!apiConnected)}>
+                {apiConnected ? <ToggleRight size={24} className="text-green-500" /> : <ToggleLeft size={24} className="text-muted-foreground" />}
+              </button>
+            </div>
           </div>
         </div>
 
