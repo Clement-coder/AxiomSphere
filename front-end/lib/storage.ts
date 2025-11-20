@@ -43,11 +43,13 @@ export interface MicropaymentLog {
 
 // User Management
 export const storeUser = (user: User) => {
+  console.log("Storing user:", user);
   localStorage.setItem('user', JSON.stringify(user));
 };
 
 export const getUser = (): User | null => {
   const user = localStorage.getItem('user');
+  console.log("Retrieving user:", user ? JSON.parse(user) : null);
   return user ? JSON.parse(user) : null;
 };
 

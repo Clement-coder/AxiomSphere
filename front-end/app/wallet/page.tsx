@@ -8,7 +8,8 @@ import { ButtonWithIcon } from '@/components/button-with-icon';
 import { AlertBox } from '@/components/alert-box';
 import { ModalBase } from '@/components/modal-base';
 import { FuturisticInput } from '@/components/futuristic-input';
-import { QRCodeCanvas } from 'qrcode.react'; // Corrected import for qrcode.react
+import { QRCodeCanvas } from 'qrcode.react';
+import { usePrivy } from '@privy-io/react-auth'; // Import usePrivy
 
 export default function WalletPage() {
   const router = useRouter();
@@ -28,16 +29,33 @@ export default function WalletPage() {
     message: '',
   });
 
-  const hardcodedWalletAddress = '0x1234567890abcdef1234567890abcdef12345678'; // Example address
+  const { user: privyUser, ready, authenticated } = usePrivy(); // Get Privy user object
+
+  // Find the embedded wallet
+  const embeddedWallet = privyUser?.linkedAccounts.find(
+    (account) => account.type === 'wallet' && account.walletClientType === 'privy'
+  );
+
+  const walletAddress = embeddedWallet?.address || 'N/A';
+  const chainName = embeddedWallet?.chain?.name || 'N/A';
 
   useEffect(() => {
+    if (!ready) return;
+
+    if (!authenticated) {
+      router.push('/');
+      return;
+    }
+
     const currentUser = getUser();
     if (!currentUser) {
+      // This case should ideally not happen if loginModalButton correctly stores user
+      console.warn("User not found in local storage on wallet page, redirecting.");
       router.push('/');
       return;
     }
     setUser(currentUser);
-  }, [router]);
+  }, [router, ready, authenticated]);
 
   const handleDeposit = () => {
     const depositAmount = parseFloat(amount);
@@ -78,11 +96,15 @@ export default function WalletPage() {
   };
 
   const copyAddressToClipboard = () => {
-    navigator.clipboard.writeText(hardcodedWalletAddress);
-    setAlert({ show: true, type: 'success', title: 'Address Copied', message: 'Wallet address copied to clipboard!' });
+    if (walletAddress !== 'N/A') {
+      navigator.clipboard.writeText(walletAddress);
+      setAlert({ show: true, type: 'success', title: 'Address Copied', message: 'Wallet address copied to clipboard!' });
+    } else {
+      setAlert({ show: true, type: 'error', title: 'No Wallet Address', message: 'Cannot copy, embedded wallet address not found.' });
+    }
   };
 
-  if (!user) return null;
+  if (!user || !ready || !authenticated) return null; // Ensure user and Privy state are ready
 
   return (
     <>
@@ -116,6 +138,30 @@ export default function WalletPage() {
           </div>
         </div>
 
+        {/* Embedded Wallet Information */}
+        <div className="glass border-glow rounded-lg p-6">
+          <h2 className="text-xl font-bold mb-4">Embedded Wallet Details</h2>
+          <div className="space-y-3">
+            <div className="flex items-center justify-between bg-input p-3 rounded-md border border-border/50">
+              <span className="text-sm text-muted-foreground">Address:</span>
+              <span className="font-mono text-sm truncate">{walletAddress}</span>
+              <ButtonWithIcon
+                icon={Copy}
+                label="Copy"
+                onClick={copyAddressToClipboard}
+                size="sm"
+                variant="secondary"
+                disabled={walletAddress === 'N/A'}
+              />
+            </div>
+            <div className="flex items-center justify-between bg-input p-3 rounded-md border border-border/50">
+              <span className="text-sm text-muted-foreground">Network:</span>
+              <span className="font-mono text-sm">{chainName}</span>
+            </div>
+            {/* Add more Privy wallet details here if needed */}
+          </div>
+        </div>
+
         {/* Transaction History (Placeholder) */}
         <div className="glass border-glow rounded-lg p-6">
           <h2 className="text-xl font-bold mb-4">Transaction History</h2>
@@ -135,16 +181,21 @@ export default function WalletPage() {
       >
         <div className="mt-4 space-y-4">
           <div className="flex justify-center p-4 bg-muted rounded-md">
-            <QRCodeCanvas value={hardcodedWalletAddress} size={200} level="H" />
+            {walletAddress !== 'N/A' ? (
+              <QRCodeCanvas value={walletAddress} size={200} level="H" />
+            ) : (
+              <div className="text-muted-foreground">Wallet address not available for QR code.</div>
+            )}
           </div>
           <div className="flex items-center justify-between bg-input p-3 rounded-md border border-border/50">
-            <span className="font-mono text-sm truncate">{hardcodedWalletAddress}</span>
+            <span className="font-mono text-sm truncate">{walletAddress}</span>
             <ButtonWithIcon
               icon={Copy}
               label="Copy"
               onClick={copyAddressToClipboard}
               size="sm"
               variant="secondary"
+              disabled={walletAddress === 'N/A'}
             />
           </div>
         </div>

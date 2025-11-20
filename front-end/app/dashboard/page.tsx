@@ -15,14 +15,17 @@ export default function DashboardPage() {
   const { user: privyUser, ready, authenticated } = usePrivy();
 
   useEffect(() => {
+    console.log("Dashboard useEffect: ready:", ready, "authenticated:", authenticated);
     if (!ready) return;
 
     if (!authenticated) {
+      console.log("Dashboard: Not authenticated, redirecting to /");
       router.push('/');
       return;
     }
 
     const currentUser = getUser();
+    console.log("Dashboard: currentUser from storage:", currentUser);
     if (currentUser) {
       setUser(currentUser);
       setDeployedAgents(getDeployedAgents());

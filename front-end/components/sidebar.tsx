@@ -20,7 +20,7 @@ interface SidebarProps {
   onClose: () => void;
 }
 
-export default function Sidebar({ isOpen, onClose }: SidebarProps) => {
+export default function Sidebar({ isOpen, onClose }: SidebarProps) {
   const pathname = usePathname();
   const [user, setUser] = useState<any>(null);
   const [showLogoutModal, setShowLogoutModal] = useState(false); // State for logout modal

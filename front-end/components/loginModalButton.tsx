@@ -25,7 +25,9 @@ export const LoginModalButton: React.FC = () => {
         balance: 0, // Initialize balance for new users
         username: privyUser.github?.username || privyUser.google?.name || privyUser.email?.address?.split('@')[0],
       };
+      console.log("Attempting to store user:", newUser); // Added log
       storeUser(newUser); // Store the user in local storage
+      console.log("User stored successfully."); // Added log
 
       setLoading(false);
       router.push("/dashboard");
