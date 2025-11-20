@@ -8,6 +8,7 @@ import Navbar from '@/components/navbar';
 import { usePathname, useRouter } from 'next/navigation';
 import SearchModal from '@/components/search-modal';
 import NotificationPanel from '@/components/notification-panel';
+import { AppProviders } from '@/components/AppProviders';
 
 interface LayoutProps {
   children: React.ReactNode;
@@ -56,21 +57,23 @@ export default function RootLayout({ children }: LayoutProps) {
     return (
       <html lang="en">
         <body>
-          <div className="flex min-h-screen bg-background text-foreground">
-            <Sidebar isOpen={isSidebarOpen} onClose={() => setIsSidebarOpen(false)} />
-            <div className="flex-1 flex flex-col md:ml-64">
-              <Navbar
-                onMenuClick={handleSidebarToggle}
-                onSearchClick={handleSearchModalToggle}
-                onNotificationClick={handleNotificationPanelToggle}
-              />
-              <main className="flex-1 p-8">
-                <SkeletonLoader />
-              </main>
+          <AppProviders>
+            <div className="flex min-h-screen bg-background text-foreground">
+              <Sidebar isOpen={isSidebarOpen} onClose={() => setIsSidebarOpen(false)} />
+              <div className="flex-1 flex flex-col md:ml-64">
+                <Navbar
+                  onMenuClick={handleSidebarToggle}
+                  onSearchClick={handleSearchModalToggle}
+                  onNotificationClick={handleNotificationPanelToggle}
+                />
+                <main className="flex-1 p-8">
+                  <SkeletonLoader />
+                </main>
+              </div>
+              <SearchModal isOpen={isSearchModalOpen} onClose={() => setIsSearchModalOpen(false)} />
+              <NotificationPanel isOpen={isNotificationPanelOpen} onClose={() => setIsNotificationPanelOpen(false)} />
             </div>
-            <SearchModal isOpen={isSearchModalOpen} onClose={() => setIsSearchModalOpen(false)} />
-            <NotificationPanel isOpen={isNotificationPanelOpen} onClose={() => setIsNotificationPanelOpen(false)} />
-          </div>
+          </AppProviders>
         </body>
       </html>
     );
@@ -80,21 +83,23 @@ export default function RootLayout({ children }: LayoutProps) {
     return (
       <html lang="en">
         <body>
-          <div className="flex min-h-screen bg-background text-foreground">
-            <Sidebar isOpen={isSidebarOpen} onClose={() => setIsSidebarOpen(false)} />
-            <div className="flex-1 flex flex-col md:ml-64">
-              <Navbar
-                onMenuClick={handleSidebarToggle}
-                onSearchClick={handleSearchModalToggle}
-                onNotificationClick={handleNotificationPanelToggle}
-              />
-              <main className="flex-1 p-8">
-                <SkeletonLoader />
-              </main>
+          <AppProviders>
+            <div className="flex min-h-screen bg-background text-foreground">
+              <Sidebar isOpen={isSidebarOpen} onClose={() => setIsSidebarOpen(false)} />
+              <div className="flex-1 flex flex-col md:ml-64">
+                <Navbar
+                  onMenuClick={handleSidebarToggle}
+                  onSearchClick={handleSearchModalToggle}
+                  onNotificationClick={handleNotificationPanelToggle}
+                />
+                <main className="flex-1 p-8">
+                  <SkeletonLoader />
+                </main>
+              </div>
+              <SearchModal isOpen={isSearchModalOpen} onClose={() => setIsSearchModalOpen(false)} />
+              <NotificationPanel isOpen={isNotificationPanelOpen} onClose={() => setIsNotificationPanelOpen(false)} />
             </div>
-            <SearchModal isOpen={isSearchModalOpen} onClose={() => setIsSearchModalOpen(false)} />
-            <NotificationPanel isOpen={isNotificationPanelOpen} onClose={() => setIsNotificationPanelOpen(false)} />
-          </div>
+          </AppProviders>
         </body>
       </html>
     );
@@ -104,7 +109,9 @@ export default function RootLayout({ children }: LayoutProps) {
     return (
       <html lang="en">
         <body>
-          {children}
+          <AppProviders>
+            {children}
+          </AppProviders>
         </body>
       </html>
     );
@@ -113,21 +120,23 @@ export default function RootLayout({ children }: LayoutProps) {
   return (
     <html lang="en">
       <body>
-        <div className="flex min-h-screen bg-background text-foreground">
-          <Sidebar isOpen={isSidebarOpen} onClose={() => setIsSidebarOpen(false)} />
-          <div className="flex-1 flex flex-col md:ml-64">
-            <Navbar
-              onMenuClick={handleSidebarToggle}
-              onSearchClick={handleSearchModalToggle}
-              onNotificationClick={handleNotificationPanelToggle}
-            />
-            <main className="flex-1 p-8">
-              {children}
-            </main>
+        <AppProviders>
+          <div className="flex min-h-screen bg-background text-foreground">
+            <Sidebar isOpen={isSidebarOpen} onClose={() => setIsSidebarOpen(false)} />
+            <div className="flex-1 flex flex-col md:ml-64">
+              <Navbar
+                onMenuClick={handleSidebarToggle}
+                onSearchClick={handleSearchModalToggle}
+                onNotificationClick={handleNotificationPanelToggle}
+              />
+              <main className="flex-1 p-8">
+                {children}
+              </main>
+            </div>
+            <SearchModal isOpen={isSearchModalOpen} onClose={() => setIsSearchModalOpen(false)} />
+            <NotificationPanel isOpen={isNotificationPanelOpen} onClose={() => setIsNotificationPanelOpen(false)} />
           </div>
-          <SearchModal isOpen={isSearchModalOpen} onClose={() => setIsSearchModalOpen(false)} />
-          <NotificationPanel isOpen={isNotificationPanelOpen} onClose={() => setIsNotificationPanelOpen(false)} />
-        </div>
+        </AppProviders>
       </body>
     </html>
   );
