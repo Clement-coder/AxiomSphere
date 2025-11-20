@@ -57,8 +57,7 @@ export default function Sidebar({ isOpen, onClose }: SidebarProps) {
       >
         <div className="p-4 border-b border-border/50 flex items-center justify-between">
           <Link href="/dashboard" className="text-2xl font-bold text-primary flex items-center gap-2">
-            <span>⚡</span>
-            <span>DApp</span>
+            <span>Axiomsphere</span>
           </Link>
           <button onClick={onClose} className="p-2 rounded-full hover:bg-muted md:hidden">
             <X size={20} />

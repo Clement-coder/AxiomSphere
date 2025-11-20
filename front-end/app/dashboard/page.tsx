@@ -5,6 +5,8 @@ import { useRouter } from 'next/navigation';
 import { getUser, getDeployedAgents, getLogs, updateUser } from '@/lib/storage';
 import { DollarSign, Users, Repeat, Activity, Bot, Clock, TrendingUp, FileText } from 'lucide-react';
 import { usePrivy } from "@privy-io/react-auth";
+import { useBalance } from 'wagmi';
+import { formatUnits } from 'viem';
 
 
 export default function DashboardPage() {
@@ -12,58 +14,61 @@ export default function DashboardPage() {
   const [user, setUser] = useState<any>(null);
   const [deployedAgents, setDeployedAgents] = useState<any[]>([]);
   const [recentLogs, setRecentLogs] = useState<any[]>([]);
-  const { user: privyUser, ready, authenticated } = usePrivy();
-
-  useEffect(() => {
-    console.log("Dashboard useEffect: ready:", ready, "authenticated:", authenticated);
-    if (!ready) return;
-
-    if (!authenticated) {
-      console.log("Dashboard: Not authenticated, redirecting to /");
-      router.push('/');
-      return;
-    }
-
-    const currentUser = getUser();
-    console.log("Dashboard: currentUser from storage:", currentUser);
-    if (currentUser) {
-      setUser(currentUser);
-      setDeployedAgents(getDeployedAgents());
-      setRecentLogs(getLogs().slice(-5).reverse());
-    } else {
-      console.warn("Privy authenticated, but local user data missing. Redirecting to home.");
-      router.push('/');
-      return;
-    }
-
-    // Simulate real-time updates for balance and agent status
-    const interval = setInterval(() => {
-      setUser((prevUser: any) => {
-        if (prevUser) {
-          const newBalance = prevUser.balance + (Math.random() * 0.1 - 0.05); // Simulate small fluctuations
-          const updatedUser = { ...prevUser, balance: newBalance };
-          updateUser(updatedUser); // Update in local storage
-          return updatedUser;
-        }
-        return prevUser;
-      });
-
-      setDeployedAgents((prevAgents: any[]) => {
-        return prevAgents.map(agent => {
-          // Simulate agent status change
-          if (Math.random() < 0.1) { // 10% chance to change status
-            const newStatus = agent.status === 'active' ? 'paused' : 'active';
-            return { ...agent, status: newStatus };
-          }
-          return agent;
+    const { user: privyUser, ready, authenticated } = usePrivy();
+  
+    const embeddedWallet = privyUser?.linkedAccounts.find(
+      (account) => account.type === 'wallet' && account.walletClientType === 'privy'
+    );
+    const walletAddress = embeddedWallet?.address || '0x';
+    const chainId = embeddedWallet?.chain?.chainId;
+    const chainName = embeddedWallet?.chain?.name || 'N/A';
+  
+    const { data: balanceData, isLoading: isBalanceLoading } = useBalance({
+      address: walletAddress as `0x${string}`,
+      chainId: chainId ? parseInt(chainId, 10) : undefined,
+      watch: true,
+    });
+  
+    useEffect(() => {
+      console.log("Dashboard useEffect: ready:", ready, "authenticated:", authenticated);
+      if (!ready) return;
+  
+      if (!authenticated) {
+        console.log("Dashboard: Not authenticated, redirecting to /");
+        router.push('/');
+        return;
+      }
+  
+      const currentUser = getUser();
+      console.log("Dashboard: currentUser from storage:", currentUser);
+      if (currentUser) {
+        setUser(currentUser);
+        setDeployedAgents(getDeployedAgents());
+        setRecentLogs(getLogs().slice(-5).reverse());
+      } else {
+        console.warn("Privy authenticated, but local user data missing. Redirecting to home.");
+        router.push('/');
+        return;
+      }
+  
+      // Simulate real-time updates for agent status
+      const interval = setInterval(() => {
+        setDeployedAgents((prevAgents: any[]) => {
+          return prevAgents.map(agent => {
+            // Simulate agent status change
+            if (Math.random() < 0.1) { // 10% chance to change status
+              const newStatus = agent.status === 'active' ? 'paused' : 'active';
+              return { ...agent, status: newStatus };
+            }
+            return agent;
+          });
         });
-      });
-
-      setRecentLogs(getLogs().slice(-5).reverse()); // Refresh logs
-    }, 10000); // Update every 10 seconds
-
-    return () => clearInterval(interval);
-  }, [ready, authenticated, router]);
+  
+        setRecentLogs(getLogs().slice(-5).reverse()); // Refresh logs
+      }, 10000); // Update every 10 seconds
+  
+      return () => clearInterval(interval);
+    }, [ready, authenticated, router, chainId, walletAddress]);
 
   if (!user) return null;
 
@@ -85,6 +90,13 @@ export default function DashboardPage() {
 
   const displayName = getDisplayName();
 
+  const displayBalance = balanceData
+    ? (balanceData.formatted !== undefined
+      ? parseFloat(balanceData.formatted).toFixed(4)
+      : parseFloat(formatUnits(balanceData.value, balanceData.decimals)).toFixed(4))
+    : '0.0000';
+  const balanceSymbol = balanceData?.symbol || 'ETH';
+
   return (
     
       <div className="space-y-8">
@@ -100,7 +112,9 @@ export default function DashboardPage() {
             <DollarSign className="h-8 w-8 text-primary" />
             <div>
               <div className="text-sm text-muted-foreground">Account Balance</div>
-              <div className="text-2xl font-bold text-primary">${user?.balance?.toFixed(2) || 'N/A'}</div>
+              <div className="text-2xl font-bold text-primary">
+                {isBalanceLoading ? 'Loading...' : `$${displayBalance} ${balanceSymbol}`}
+              </div>
             </div>
           </div>
           <div className="glass border-glow rounded-lg p-6 glow flex items-center space-x-4">
