@@ -1,9 +1,10 @@
-'use client';
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 import { LogOut, LayoutDashboard, ShoppingCart, Code, BarChart2, Settings, X, Wallet as WalletIcon } from 'lucide-react';
 import { deleteUser, getUser } from '@/lib/storage';
 import { useEffect, useState } from 'react';
+import { ConfirmationModal } from './confirmation-modal'; // Import ConfirmationModal
+import { usePrivy } from '@privy-io/react-auth'; // Import usePrivy
 
 const navLinks = [
   { href: '/dashboard', label: 'Dashboard', icon: <LayoutDashboard size={20} /> },
@@ -19,17 +20,26 @@ interface SidebarProps {
   onClose: () => void;
 }
 
-export default function Sidebar({ isOpen, onClose }: SidebarProps) {
+export default function Sidebar({ isOpen, onClose }: SidebarProps) => {
   const pathname = usePathname();
   const [user, setUser] = useState<any>(null);
+  const [showLogoutModal, setShowLogoutModal] = useState(false); // State for logout modal
+  const { logout } = usePrivy(); // Get Privy's logout function
 
   useEffect(() => {
     setUser(getUser());
   }, []);
 
-  const handleLogout = () => {
-    deleteUser();
-    window.location.href = '/';
+  const handleLogoutClick = () => {
+    onClose(); // Close sidebar
+    setShowLogoutModal(true); // Open logout confirmation modal
+  };
+
+  const onConfirmLogout = async () => {
+    setShowLogoutModal(false); // Close modal
+    deleteUser(); // Clear local storage user data
+    await logout(); // Call Privy's logout function
+    window.location.href = '/'; // Redirect to home page
   };
 
   return (
@@ -76,7 +86,7 @@ export default function Sidebar({ isOpen, onClose }: SidebarProps) {
             {user?.email}
           </div>
           <button
-            onClick={handleLogout}
+            onClick={handleLogoutClick} // Call the new handler
             className="w-full flex items-center gap-3 px-4 py-2 rounded-lg text-destructive hover:bg-destructive/20 transition-colors font-medium"
           >
             <LogOut size={20} />
@@ -84,6 +94,18 @@ export default function Sidebar({ isOpen, onClose }: SidebarProps) {
           </button>
         </div>
       </aside>
+
+      {/* Logout Confirmation Modal */}
+      <ConfirmationModal
+        isOpen={showLogoutModal}
+        onClose={() => setShowLogoutModal(false)}
+        onConfirm={onConfirmLogout}
+        title="Confirm Logout"
+        message="Are you sure you want to log out? You will be redirected to the login page."
+        icon={<LogOut className="h-6 w-6 text-destructive" />}
+        confirmButtonText="Logout"
+        cancelButtonText="Cancel"
+      />
     </>
   );
 }

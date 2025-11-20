@@ -2,6 +2,8 @@
 import { useState, useEffect } from 'react';
 import { Search, Bell, ChevronDown, LogOut, Menu } from 'lucide-react';
 import { getUser, deleteUser } from '@/lib/storage';
+import { ConfirmationModal } from './confirmation-modal'; // Import ConfirmationModal
+import { usePrivy } from '@privy-io/react-auth'; // Import usePrivy
 
 interface NavbarProps {
   onMenuClick: () => void;
@@ -12,14 +14,23 @@ interface NavbarProps {
 export default function Navbar({ onMenuClick, onSearchClick, onNotificationClick }: NavbarProps) {
   const [user, setUser] = useState<any>(null);
   const [showUserMenu, setShowUserMenu] = useState(false);
+  const [showLogoutModal, setShowLogoutModal] = useState(false); // State for logout modal
+  const { logout } = usePrivy(); // Get Privy's logout function
 
   useEffect(() => {
     setUser(getUser());
   }, []);
 
-  const handleLogout = () => {
-    deleteUser();
-    window.location.href = '/';
+  const handleLogoutClick = () => {
+    setShowUserMenu(false); // Close user menu
+    setShowLogoutModal(true); // Open logout confirmation modal
+  };
+
+  const onConfirmLogout = async () => {
+    setShowLogoutModal(false); // Close modal
+    deleteUser(); // Clear local storage user data
+    await logout(); // Call Privy's logout function
+    window.location.href = '/'; // Redirect to home page
   };
 
   return (
@@ -69,7 +80,7 @@ export default function Navbar({ onMenuClick, onSearchClick, onNotificationClick
             <div className="absolute right-0 mt-2 w-48 rounded-md border bg-background shadow-lg">
               <div className="py-1">
                 <button
-                  onClick={handleLogout}
+                  onClick={handleLogoutClick} // Call the new handler
                   className="flex w-full items-center gap-2 px-4 py-2 text-left text-sm text-destructive hover:bg-destructive/10"
                 >
                   <LogOut size={16} />
@@ -80,6 +91,18 @@ export default function Navbar({ onMenuClick, onSearchClick, onNotificationClick
           )}
         </div>
       </div>
+
+      {/* Logout Confirmation Modal */}
+      <ConfirmationModal
+        isOpen={showLogoutModal}
+        onClose={() => setShowLogoutModal(false)}
+        onConfirm={onConfirmLogout}
+        title="Confirm Logout"
+        message="Are you sure you want to log out? You will be redirected to the login page."
+        icon={<LogOut className="h-6 w-6 text-destructive" />}
+        confirmButtonText="Logout"
+        cancelButtonText="Cancel"
+      />
     </header>
   );
 }
