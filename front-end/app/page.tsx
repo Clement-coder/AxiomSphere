@@ -1,48 +1,78 @@
 "use client";
 
-import React, { useEffect } from "react";
+import React, { useEffect, useRef } from "react";
 import { useRouter } from "next/navigation";
 import { usePrivy } from "@privy-io/react-auth";
 import { LoginModalButton } from "@/components/loginModalButton";
-import Image from "next/image";
+import { Sparkles } from "lucide-react";
 
 export default function AuthPage() {
   const { ready, authenticated } = usePrivy();
   const router = useRouter();
+  const hasRedirected = useRef(false);
 
   useEffect(() => {
-    if (ready && authenticated) {
-      router.push("/dashboard");
+    // Only redirect once when ready and authenticated
+    if (ready && authenticated && !hasRedirected.current) {
+      hasRedirected.current = true;
+      router.replace("/dashboard");
     }
   }, [ready, authenticated, router]);
 
+  // If authenticated, show loading state instead of the login page
+  if (ready && authenticated) {
+    return (
+      <div className="min-h-screen flex items-center justify-center bg-background">
+        <div className="text-center">
+          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary mx-auto mb-4"></div>
+          <p className="text-foreground">Redirecting to dashboard...</p>
+        </div>
+      </div>
+    );
+  }
+
   return (
-    <main className="flex items-center justify-center min-h-screen bg-gray-900 text-white p-4">
-      <div className="relative z-10 flex flex-col items-center justify-center w-full max-w-md p-8 bg-gray-800 rounded-2xl shadow-lg border border-gray-700">
-        <div>
-          <h1 className="text-5xl font-bold text-center text-transparent bg-clip-text bg-gradient-to-r from-blue-400 to-purple-500">
-            AxiomSphere
-          </h1>
-          <p className="mt-3 text-lg text-center text-gray-300">
+    <div className="min-h-screen flex items-center justify-center bg-background p-4">
+      <div className="w-full max-w-md space-y-8">
+        {/* Header */}
+        <div className="text-center space-y-2">
+          <div className="flex items-center justify-center gap-2 mb-4">
+            <Sparkles className="text-primary" size={32} />
+            <h1 className="text-4xl md:text-5xl font-bold text-foreground">
+              AxiomSphere
+            </h1>
+          </div>
+          <p className="text-lg md:text-xl text-muted-foreground">
             Your Gateway to Decentralized Intelligence
           </p>
         </div>
 
-        <div className="w-full my-8 border-t border-gray-700"></div>
-
-        <div className="w-full text-center">
-          <p className="mb-6 text-gray-400">
-            Sign in to deploy and manage your AI agents.
-          </p>
+        {/* Login Card */}
+        <div className="glass border-glow rounded-lg p-6 md:p-8 space-y-6">
+          <div className="text-center space-y-2">
+            <h2 className="text-xl md:text-2xl font-bold text-foreground">
+              Welcome Back
+            </h2>
+            <p className="text-sm md:text-base text-muted-foreground">
+              Sign in to deploy and manage your AI agents
+            </p>
+          </div>
+          
           <LoginModalButton />
+
+          {!ready && (
+            <div className="flex items-center justify-center gap-2 text-sm text-muted-foreground">
+              <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-primary"></div>
+              <span>Initializing authentication...</span>
+            </div>
+          )}
         </div>
 
-        {!ready && (
-          <div className="absolute bottom-4 text-xs text-gray-500">
-            Initializing authentication...
-          </div>
-        )}
+        {/* Footer */}
+        <div className="text-center text-sm text-muted-foreground">
+          <p>Powered by decentralized AI technology</p>
+        </div>
       </div>
-    </main>
+    </div>
   );
 }

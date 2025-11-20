@@ -1,65 +1,95 @@
-import React, { useEffect, useState } from "react";
+import React, { useState, useRef } from "react";
 import { useLogin, usePrivy } from "@privy-io/react-auth";
 import { useRouter } from "next/navigation";
-
-import { storeUser, User } from "@/lib/storage"; // Import storeUser and User
+import { storeUser, User } from "@/lib/storage";
+import { LogIn } from "lucide-react";
 
 export const LoginModalButton: React.FC = () => {
   const { ready, authenticated } = usePrivy();
   const router = useRouter();
   const [loading, setLoading] = useState(false);
-
-  useEffect(() => {
-    console.log("Privy state in button:", { ready, authenticated });
-  }, [ready, authenticated]);
+  const hasHandledLogin = useRef(false);
 
   const { login } = useLogin({
-    onComplete: ({ user: privyUser, isNewUser, wasAlreadyAuthenticated }) => { // Renamed user to privyUser to avoid conflict
+    onComplete: ({ user: privyUser, isNewUser, wasAlreadyAuthenticated }) => {
+      // Prevent multiple executions
+      if (hasHandledLogin.current) {
+        return;
+      }
+      hasHandledLogin.current = true;
+
       console.log("Login complete, user:", privyUser, "isNewUser:", isNewUser);
 
-      // Map Privy user to local User interface and store it
-      const newUser: User = {
-        id: privyUser.id,
-        email: privyUser.email?.address || "", // Use email if available
-        password: "", // Privy doesn't expose password
-        balance: 0, // Initialize balance for new users
-        username: privyUser.github?.username || privyUser.google?.name || privyUser.email?.address?.split('@')[0],
-      };
-      console.log("Attempting to store user:", newUser); // Added log
-      storeUser(newUser); // Store the user in local storage
-      console.log("User stored successfully."); // Added log
+      try {
+        // Map Privy user to local User interface and store it
+        const newUser: User = {
+          id: privyUser.id,
+          email: privyUser.email?.address || "",
+          password: "",
+          balance: 0,
+          username: privyUser.github?.username || 
+                   privyUser.google?.name || 
+                   privyUser.email?.address?.split('@')[0] || 
+                   "User",
+        };
+        
+        console.log("Storing user:", newUser);
+        storeUser(newUser);
+        console.log("User stored successfully");
 
-      setLoading(false);
-      router.push("/dashboard");
+        // Small delay to ensure state updates are processed
+        setTimeout(() => {
+          setLoading(false);
+          router.replace("/dashboard");
+        }, 100);
+      } catch (error) {
+        console.error("Error storing user:", error);
+        setLoading(false);
+        hasHandledLogin.current = false;
+      }
     },
     onError: (error) => {
       console.error("Privy login error:", error);
       setLoading(false);
+      hasHandledLogin.current = false;
     },
   });
 
   const handleClick = () => {
     if (!ready) {
-      console.warn("Tried to login, but Privy not ready");
+      console.warn("Privy not ready yet");
       return;
     }
+    
+    if (authenticated) {
+      router.replace("/dashboard");
+      return;
+    }
+
     setLoading(true);
+    hasHandledLogin.current = false;
     login();
   };
 
   return (
     <button
       onClick={handleClick}
-      disabled={!ready || authenticated || loading}
-      className="px-6 py-3 bg-gradient-to-r from-blue-500 to-purple-600 text-white font-semibold rounded-lg shadow-lg hover:from-blue-600 hover:to-purple-700 transition-all duration-300 ease-in-out disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center space-x-2"
+      disabled={!ready || loading}
+      className="relative w-full flex items-center justify-center gap-2 rounded-lg bg-primary px-6 py-3 text-primary-foreground font-semibold shadow-lg hover:bg-primary/90 transition-all disabled:opacity-50 disabled:cursor-not-allowed border border-primary/50"
     >
-      {loading && (
-        <svg className="animate-spin h-5 w-5 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
-          <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
-          <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
-        </svg>
+      {loading ? (
+        <>
+          <div className="animate-spin rounded-full h-5 w-5 border-b-2 border-primary-foreground"></div>
+          <span>Signing In...</span>
+        </>
+      ) : (
+        <>
+          <LogIn size={20} />
+          <span>
+            {authenticated ? "Continue to Dashboard" : "Sign Up / Log In"}
+          </span>
+        </>
       )}
-      {authenticated ? "Continue to Dashboard" : (loading ? "Signing In..." : "Sign Up / Log In")}
     </button>
   );
 };
