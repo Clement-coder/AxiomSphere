@@ -4,6 +4,7 @@ import { useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { getUser, getDeployedAgents, getLogs, updateUser } from '@/lib/storage';
 import { DollarSign, Users, Repeat, Activity, Bot, Clock, TrendingUp, FileText } from 'lucide-react';
+import { usePrivy } from "@privy-io/react-auth";
 
 
 export default function DashboardPage() {
@@ -11,16 +12,26 @@ export default function DashboardPage() {
   const [user, setUser] = useState<any>(null);
   const [deployedAgents, setDeployedAgents] = useState<any[]>([]);
   const [recentLogs, setRecentLogs] = useState<any[]>([]);
+  const { user: privyUser, ready, authenticated } = usePrivy();
 
   useEffect(() => {
-    const currentUser = getUser();
-    if (!currentUser) {
+    if (!ready) return;
+
+    if (!authenticated) {
       router.push('/');
       return;
     }
-    setUser(currentUser);
-    setDeployedAgents(getDeployedAgents());
-    setRecentLogs(getLogs().slice(-5).reverse());
+
+    const currentUser = getUser();
+    if (currentUser) {
+      setUser(currentUser);
+      setDeployedAgents(getDeployedAgents());
+      setRecentLogs(getLogs().slice(-5).reverse());
+    } else {
+      console.warn("Privy authenticated, but local user data missing. Redirecting to home.");
+      router.push('/');
+      return;
+    }
 
     // Simulate real-time updates for balance and agent status
     const interval = setInterval(() => {
@@ -49,16 +60,34 @@ export default function DashboardPage() {
     }, 10000); // Update every 10 seconds
 
     return () => clearInterval(interval);
-  }, [router]);
+  }, [ready, authenticated, router]);
 
   if (!user) return null;
+
+  const getDisplayName = () => {
+    if (user?.username) {
+      return user.username;
+    }
+    if (privyUser?.github?.username) {
+      return privyUser.github.username;
+    }
+    if (privyUser?.google?.name) {
+      return privyUser.google.name;
+    }
+    if (privyUser?.email?.address) {
+      return privyUser.email.address.split('@')[0];
+    }
+    return "there";
+  };
+
+  const displayName = getDisplayName();
 
   return (
     
       <div className="space-y-8">
         {/* Header */}
         <div>
-          <h1 className="text-3xl font-bold mb-2">Dashboard</h1>
+          <h1 className="text-3xl font-bold mb-2">Welcome, {displayName}!</h1>
           <p className="text-muted-foreground">Monitor your autonomous agents and execution status</p>
         </div>
 
