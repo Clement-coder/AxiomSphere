@@ -2,7 +2,6 @@
 
 import { useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
-import { getUser, updateUser } from '@/lib/storage';
 import { DollarSign, Wallet as WalletIcon, PlusCircle, MinusCircle, Copy, QrCode, CheckCircle, AlertCircle } from 'lucide-react';
 import { ButtonWithIcon } from '@/components/button-with-icon';
 import { AlertBox } from '@/components/alert-box';
@@ -10,10 +9,11 @@ import { ModalBase } from '@/components/modal-base';
 import { FuturisticInput } from '@/components/futuristic-input';
 import { QRCodeCanvas } from 'qrcode.react';
 import { usePrivy } from '@privy-io/react-auth'; // Import usePrivy
+import { useBalance } from 'wagmi'; // Import useBalance
+import { formatUnits } from 'viem'; // Import formatUnits
 
 export default function WalletPage() {
   const router = useRouter();
-  const [user, setUser] = useState<any>(null);
   const [showDepositModal, setShowDepositModal] = useState(false);
   const [showWithdrawModal, setShowWithdrawModal] = useState(false);
   const [amount, setAmount] = useState('');
@@ -29,70 +29,31 @@ export default function WalletPage() {
     message: '',
   });
 
-  const { user: privyUser, ready, authenticated } = usePrivy(); // Get Privy user object
+  const { user: privyUser, ready, authenticated } = usePrivy();
 
-  // Find the embedded wallet
   const embeddedWallet = privyUser?.linkedAccounts.find(
     (account) => account.type === 'wallet' && account.walletClientType === 'privy'
   );
-
-  const walletAddress = embeddedWallet?.address || 'N/A';
+  const walletAddress = embeddedWallet?.address || '0x';
+  const chainId = embeddedWallet?.chain?.chainId;
   const chainName = embeddedWallet?.chain?.name || 'N/A';
 
-  useEffect(() => {
-    if (!ready) return;
-
-    if (!authenticated) {
-      router.push('/');
-      return;
-    }
-
-    const currentUser = getUser();
-    if (!currentUser) {
-      // This case should ideally not happen if loginModalButton correctly stores user
-      console.warn("User not found in local storage on wallet page, redirecting.");
-      router.push('/');
-      return;
-    }
-    setUser(currentUser);
-  }, [router, ready, authenticated]);
+  const { data: balanceData, isLoading: isBalanceLoading } = useBalance({
+    address: walletAddress as `0x${string}`,
+    chainId: chainId ? parseInt(chainId, 10) : undefined,
+    watch: true, // Keep watching for balance changes
+  });
 
   const handleDeposit = () => {
-    const depositAmount = parseFloat(amount);
-    if (isNaN(depositAmount) || depositAmount <= 0) {
-      setAlert({ show: true, type: 'error', title: 'Invalid Amount', message: 'Please enter a valid positive number.' });
-      return;
-    }
-    if (user) {
-      const newBalance = user.balance + depositAmount;
-      const updatedUser = { ...user, balance: newBalance };
-      updateUser(updatedUser);
-      setUser(updatedUser);
-      setAlert({ show: true, type: 'success', title: 'Deposit Successful', message: `$${depositAmount.toFixed(2)} USDC has been added to your account.` });
-      setShowDepositModal(false);
-      setAmount('');
-    }
+    setAlert({ show: true, type: 'success', title: 'Deposit', message: 'Deposit functionality is not yet implemented. Please use the embedded wallet address to deposit funds directly.' });
+    setShowDepositModal(false);
+    setAmount('');
   };
 
   const handleWithdraw = () => {
-    const withdrawAmount = parseFloat(amount);
-    if (isNaN(withdrawAmount) || withdrawAmount <= 0) {
-      setAlert({ show: true, type: 'error', title: 'Invalid Amount', message: 'Please enter a valid positive number.' });
-      return;
-    }
-    if (user && withdrawAmount > user.balance) {
-      setAlert({ show: true, type: 'error', title: 'Insufficient Funds', message: 'You do not have enough USDC to withdraw this amount.' });
-      return;
-    }
-    if (user) {
-      const newBalance = user.balance - withdrawAmount;
-      const updatedUser = { ...user, balance: newBalance };
-      updateUser(updatedUser);
-      setUser(updatedUser);
-      setAlert({ show: true, type: 'success', title: 'Withdrawal Successful', message: `$${withdrawAmount.toFixed(2)} USDC has been withdrawn from your account.` });
-      setShowWithdrawModal(false);
-      setAmount('');
-    }
+    setAlert({ show: true, type: 'error', title: 'Withdraw', message: 'Withdrawal functionality is not yet implemented. Please manage funds directly from your embedded wallet.' });
+    setShowWithdrawModal(false);
+    setAmount('');
   };
 
   const copyAddressToClipboard = () => {
@@ -104,14 +65,21 @@ export default function WalletPage() {
     }
   };
 
-  if (!user || !ready || !authenticated) return null; // Ensure user and Privy state are ready
+  if (!ready || !authenticated) return null;
+
+  const displayBalance = balanceData
+    ? (balanceData.formatted !== undefined
+      ? parseFloat(balanceData.formatted).toFixed(4)
+      : parseFloat(formatUnits(balanceData.value, balanceData.decimals)).toFixed(4))
+    : '0.0000';
+  const balanceSymbol = balanceData?.symbol || 'ETH';
 
   return (
     <>
       <div className="space-y-8">
         <div>
           <h1 className="text-3xl font-bold mb-2">Wallet</h1>
-          <p className="text-muted-foreground">Manage your USDC balance for micropayments and agent deployments.</p>
+          <p className="text-muted-foreground">Manage your {balanceSymbol} balance for micropayments and agent deployments.</p>
         </div>
 
         <div className="glass border-glow rounded-lg p-6 glow flex items-center justify-between">
@@ -119,7 +87,9 @@ export default function WalletPage() {
             <WalletIcon size={40} className="text-primary" />
             <div>
               <div className="text-sm text-muted-foreground">Current Balance</div>
-              <div className="text-3xl font-bold text-primary">${user.balance.toFixed(2)} USDC</div>
+              <div className="text-3xl font-bold text-primary">
+                {isBalanceLoading ? 'Loading...' : `$${displayBalance} ${balanceSymbol}`}
+              </div>
             </div>
           </div>
           <div className="flex gap-4">
@@ -171,17 +141,16 @@ export default function WalletPage() {
 
       <ModalBase
         isOpen={showDepositModal}
-        title="Deposit USDC"
-        description="Scan the QR code or copy the address below to deposit USDC."
+        title="Deposit Funds"
+        description="Deposit functionality is not yet implemented. Please use the embedded wallet address to deposit funds directly."
         icon={PlusCircle}
-        confirmLabel="Done"
-        cancelLabel="Cancel"
-        onConfirm={() => setShowDepositModal(false)} // No direct deposit action in modal
+        confirmLabel="Got it"
+        onConfirm={() => setShowDepositModal(false)}
         onCancel={() => setShowDepositModal(false)}
       >
         <div className="mt-4 space-y-4">
           <div className="flex justify-center p-4 bg-muted rounded-md">
-            {walletAddress !== 'N/A' ? (
+            {walletAddress !== '0x' ? (
               <QRCodeCanvas value={walletAddress} size={200} level="H" />
             ) : (
               <div className="text-muted-foreground">Wallet address not available for QR code.</div>
@@ -195,7 +164,7 @@ export default function WalletPage() {
               onClick={copyAddressToClipboard}
               size="sm"
               variant="secondary"
-              disabled={walletAddress === 'N/A'}
+              disabled={walletAddress === '0x'}
             />
           </div>
         </div>
@@ -203,24 +172,14 @@ export default function WalletPage() {
 
       <ModalBase
         isOpen={showWithdrawModal}
-        title="Withdraw USDC"
-        description="Enter the amount of USDC you wish to withdraw from your wallet."
+        title="Withdraw Funds"
+        description="Withdrawal functionality is not yet implemented. Please manage funds directly from your embedded wallet."
         icon={MinusCircle}
-        confirmLabel="Withdraw"
-        cancelLabel="Cancel"
-        onConfirm={handleWithdraw}
+        confirmLabel="Got it"
+        onConfirm={() => setShowWithdrawModal(false)}
         onCancel={() => setShowWithdrawModal(false)}
       >
-        <div className="mt-4">
-          <FuturisticInput
-            icon={<DollarSign size={20} />}
-            label="Amount"
-            type="number"
-            value={amount}
-            onChange={setAmount}
-            placeholder="e.g., 50.00"
-          />
-        </div>
+        {/* No input needed for unimplemented withdrawal */}
       </ModalBase>
 
       {alert.show && (

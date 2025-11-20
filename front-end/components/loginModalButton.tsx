@@ -1,4 +1,4 @@
-import React, { useState, useRef } from "react";
+import React, { useState, useRef, useEffect } from "react";
 import { useLogin, usePrivy } from "@privy-io/react-auth";
 import { useRouter } from "next/navigation";
 import { storeUser, User } from "@/lib/storage";
@@ -9,6 +9,12 @@ export const LoginModalButton: React.FC = () => {
   const router = useRouter();
   const [loading, setLoading] = useState(false);
   const hasHandledLogin = useRef(false);
+
+  useEffect(() => {
+    if (ready && authenticated) {
+      router.replace("/dashboard");
+    }
+  }, [ready, authenticated, router]);
 
   const { login } = useLogin({
     onComplete: ({ user: privyUser, isNewUser, wasAlreadyAuthenticated }) => {
@@ -37,11 +43,8 @@ export const LoginModalButton: React.FC = () => {
         storeUser(newUser);
         console.log("User stored successfully");
 
-        // Small delay to ensure state updates are processed
-        setTimeout(() => {
-          setLoading(false);
-          router.replace("/dashboard");
-        }, 100);
+        setLoading(false);
+        router.replace("/dashboard");
       } catch (error) {
         console.error("Error storing user:", error);
         setLoading(false);
@@ -49,7 +52,11 @@ export const LoginModalButton: React.FC = () => {
       }
     },
     onError: (error) => {
-      console.error("Privy login error:", error);
+      if (error.message === "exited_auth_flow") {
+        console.warn("Privy login flow exited by user.");
+      } else {
+        console.error("Privy login error:", error);
+      }
       setLoading(false);
       hasHandledLogin.current = false;
     },
@@ -62,7 +69,7 @@ export const LoginModalButton: React.FC = () => {
     }
     
     if (authenticated) {
-      router.replace("/dashboard");
+      // Already authenticated, should have been redirected by useEffect
       return;
     }
 
@@ -74,7 +81,7 @@ export const LoginModalButton: React.FC = () => {
   return (
     <button
       onClick={handleClick}
-      disabled={!ready || loading}
+      disabled={!ready || loading || authenticated} // Disable if authenticated to prevent multiple redirects
       className="relative w-full flex items-center justify-center gap-2 rounded-lg bg-primary px-6 py-3 text-primary-foreground font-semibold shadow-lg hover:bg-primary/90 transition-all disabled:opacity-50 disabled:cursor-not-allowed border border-primary/50"
     >
       {loading ? (
@@ -85,9 +92,7 @@ export const LoginModalButton: React.FC = () => {
       ) : (
         <>
           <LogIn size={20} />
-          <span>
-            {authenticated ? "Continue to Dashboard" : "Sign Up / Log In"}
-          </span>
+          <span>Sign Up / Log In</span>
         </>
       )}
     </button>
